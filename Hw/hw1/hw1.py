@@ -122,8 +122,44 @@ def compare_q1(p1=0.10, alpha1=0.90, x1=5,
         raise ValueError('method must be one of: "binom", "nbinom", "both"')
 
 
-def same_prob():
-    pass
+def same_prob(p=0.10, x=5, n_max=100000, atol=1e-2):
+    """
+    Finds the minimal n such that:
+        P_binom(X >= x; n, p) ≈ P_nbinom(N <= n; x, p)
+    within absolute tolerance `atol` using np.isclose.
+
+    Comparison is performed only when both probabilities > 0.
+
+    Returns:
+        n (int) if found, else None.
+    """
+    # input validation
+    if not (0 < p < 1):
+        raise ValueError("p must be between 0 and 1")
+    if not (isinstance(x, int) and x >= 1):
+        raise ValueError("x must be a positive integer")
+    if not (isinstance(n_max, int) and n_max >= x):
+        raise ValueError("n_max must be an integer ≥ x")
+    if atol <= 0:
+        raise ValueError("atol must be positive")
+
+    for n in range(x, n_max + 1):
+        # Binomial: P(X >= x) = 1 - CDF(x-1; n, p)
+        p_binom = 1.0 - stats.binom.cdf(x - 1, n, p)
+
+        # NegBin: N = total trials to get x successes; K = failures = N - x
+        k = n - x
+        p_nbinom = stats.nbinom.cdf(k, x, p) if k >= 0 else 0.0
+
+        # compare only if both probabilities are strictly positive
+        if p_binom > 0.0 and p_nbinom > 0.0:
+            if np.isclose(p_binom, p_nbinom, atol=atol):
+                print(f"[same_prob] p={p:.2%}, x={x}, n={n} "
+                      f"→ Binom={p_binom:.4f}, NegBin={p_nbinom:.4f}")
+                return n
+
+    print(f"[same_prob] No n found within atol={atol} up to n_max={n_max} (p={p}, x={x})")
+    return None
 
 
 ### Question 2 ###
