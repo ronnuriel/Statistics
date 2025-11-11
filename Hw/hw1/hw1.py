@@ -89,9 +89,6 @@ def compare_q1(p1=0.10, alpha1=0.90, x1=5,
     method:
       - "binom" (default): uses find_sample_size_binom (supports x>=1)
       - "nbinom": uses find_sample_size_nbinom (supports x>=1)
-      - "both": computes both; prints both; returns the Binomial pair (to keep API).
-    verify:
-      - if True and method=="both", asserts equality between methods.
     """
     # Validates inputs:
     for p in (p1, p2):
