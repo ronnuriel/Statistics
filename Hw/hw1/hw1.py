@@ -1,5 +1,5 @@
 ###### Your ID ######
-# ID1: 
+# ID1: 207884883
 # ID2: 
 #####################
 
@@ -12,22 +12,55 @@ import matplotlib.pyplot as plt
 
 ### Question 1 ###
 
-def find_sample_size_binom():
+def find_sample_size_binom(p=0.03, alpha=0.85):
     """
-    Using Binom to returns the minimal number of samples required to have requested probability of receiving 
-    at least x defective products from a production line with a defective rate.
-    """
-    pass
+    Uses the closed-form formula:
 
-def find_sample_size_nbinom():
+        n = ceil( ln(1 - alpha) / ln(1 - p) )
+
+    Validates inputs:
+        0 < p < 1, 0 < alpha < 1
+    """
+    if not (0 < p < 1):
+        raise ValueError("p must be between 0 and 1")
+    if not (0 < alpha < 1):
+        raise ValueError("alpha must be between 0 and 1")
+
+    # Direct analytical case
+    n_real = np.log(1 - alpha) / np.log(1 - p)
+    return int(np.ceil(n_real))
+
+
+def find_sample_size_nbinom(p=0.03, alpha=0.85, x=1):
     """
     Using NBinom to returns the minimal number of samples required to have requested probability of receiving 
     at least x defective products from a production line with a defective rate.
+
+    Validates inputs:
+        0 < p < 1, 0 < alpha < 1, x ≥ 1 (integer)
     """
-    pass
+    # --- input validation ---
+    if not (0 < p < 1):
+        raise ValueError("p must be between 0 and 1")
+    if not (0 < alpha < 1):
+        raise ValueError("alpha must be between 0 and 1")
+    if x < 1 or not isinstance(x, int):
+        raise ValueError("x must be a positive integer")
+
+    # search over total trials n (not failures!)
+    n_values = np.arange(x, 10000, dtype=int)  # minimal trials is x
+    k_values = n_values - x                    # failures = trials - successes
+    probs = stats.nbinom.cdf(k_values, x, p)   # P(K <= n - x) = P(N <= n)
+
+    mask = probs >= alpha
+    if not np.any(mask):
+        return None
+    return int(n_values[np.argmax(mask)])
+
 
 def compare_q1():
     pass
+
 
 def same_prob():
     pass
@@ -42,22 +75,22 @@ def empirical_centralized_third_moment(n=20, p=[0.2, 0.1, 0.1, 0.1, 0.2, 0.3], k
     """
     if seed is not None:
         np.random.seed(seed)
-    
+
     return empirical_moment
 
+
 def class_moment():
-    
     return moment
 
+
 def plot_moments():
-    
     return dist_var
-    
+
+
 def plot_moments_smaller_variance():
-    
     return dist_var
-    
-    
+
+
 ### Question 3 ###
 
 def NFoldConv(P, n):
@@ -72,9 +105,10 @@ def NFoldConv(P, n):
     Returns:
     - Q: 2d numpy array: [[values], [probabilities]].
     """
-    
+
     return Q
-    
+
+
 def plot_dist(P):
     """
     Ploting the distribution P using barplot.
@@ -82,7 +116,7 @@ def plot_dist(P):
     Input:
     - P: 2d numpy array: [[values], [probabilities]].
     """
-    
+
     pass
 
 
@@ -98,8 +132,9 @@ def evenBinom(n, p):
     Returns:
     - prob: The output probability.
     """
-    
+
     return prob
+
 
 def evenBinomFormula(n, p):
     """
@@ -112,8 +147,9 @@ def evenBinomFormula(n, p):
     Returns:
     - prob: The output probability.
     """
-    
+
     return prob
+
 
 ### Question 5 ###
 
@@ -129,8 +165,9 @@ def three_RV(values, joint_probs):
     Returns:
     - v: The variance of X + Y + Z. (you cannot create the RV U = X + Y + Z) 
     """
-    
+
     return v
+
 
 def three_RV_pairwise_independent(values, joint_probs):
     """
@@ -144,8 +181,9 @@ def three_RV_pairwise_independent(values, joint_probs):
     Returns:
     - v: The variance of X + Y + Z. (you cannot create the RV U = X + Y + Z)
     """
-    
+
     return v
+
 
 def is_pairwise_collectively(X, Y, Z, joint_probs):
     """
@@ -159,7 +197,7 @@ def is_pairwise_collectively(X, Y, Z, joint_probs):
     Returns:
     TRUE or FALSE
     """
-    
+
     pass
 
 
@@ -169,22 +207,5 @@ def expectedC(n, p):
     """
     The program outputs the expected value of the RV C as defined in the notebook.
     """
-    
+
     pass
-
-
-
-
-
-
-
-
-
-
-
-    
-    
-    
-    
-    
-    
