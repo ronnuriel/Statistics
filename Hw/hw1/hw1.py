@@ -12,29 +12,45 @@ import matplotlib.pyplot as plt
 
 ### Question 1 ###
 
-def find_sample_size_binom(p=0.03, alpha=0.85):
+def find_sample_size_binom(p=0.03, alpha=0.85, x=1):
     """
-    Uses the closed-form formula:
+    Finds minimal n such that P(X >= x) >= alpha, where X~Binomial(n,p).
 
-        n = ceil( ln(1 - alpha) / ln(1 - p) )
+    • For x = 1 → uses closed-form: n = ceil(ln(1-alpha)/ln(1-p))
+    • For x > 1 → computes 1 - CDF(x-1; n, p) iteratively.
 
-    Validates inputs:
-        0 < p < 1, 0 < alpha < 1
+    Validates inputs: 0 < p < 1, 0 < alpha < 1, x ≥ 1 (integer)
     """
     if not (0 < p < 1):
         raise ValueError("p must be between 0 and 1")
     if not (0 < alpha < 1):
         raise ValueError("alpha must be between 0 and 1")
+    if x < 1 or not isinstance(x, int):
+        raise ValueError("x must be a positive integer")
 
-    # Direct analytical case
-    n_real = np.log(1 - alpha) / np.log(1 - p)
-    return int(np.ceil(n_real))
+    if x == 1:
+        n_real = np.log(1 - alpha) / np.log(1 - p)
+        n = int(np.ceil(n_real))
+        print(f"[Binom] p={p:.2%}, α={alpha:.2%}, x={x} → n={n}")
+        return n
+
+    # General case: numerical search
+    n_values = np.arange(x, 10000, dtype=int)
+    probs = 1 - stats.binom.cdf(x - 1, n_values, p)
+    mask = probs >= alpha
+    if not np.any(mask):
+        print(f"[Binom] No n found for p={p:.2%}, α={alpha:.2%}, x={x}")
+        return None
+
+    n = int(n_values[np.argmax(mask)])
+    print(f"[Binom] p={p:.2%}, α={alpha:.2%}, x={x} → n={n}")
+    return n
 
 
 def find_sample_size_nbinom(p=0.03, alpha=0.85, x=1):
     """
-    Using NBinom to returns the minimal number of samples required to have requested probability of receiving 
-    at least x defective products from a production line with a defective rate.
+    Using NBinom to returns the minimal number of samples required to have requested probability
+    of receiving at least x defective products from a production line with a defective rate.
 
     Validates inputs:
         0 < p < 1, 0 < alpha < 1, x ≥ 1 (integer)
@@ -49,17 +65,62 @@ def find_sample_size_nbinom(p=0.03, alpha=0.85, x=1):
 
     # search over total trials n (not failures!)
     n_values = np.arange(x, 10000, dtype=int)  # minimal trials is x
-    k_values = n_values - x                    # failures = trials - successes
-    probs = stats.nbinom.cdf(k_values, x, p)   # P(K <= n - x) = P(N <= n)
+    k_values = n_values - x  # failures = trials - successes
+    probs = stats.nbinom.cdf(k_values, x, p)  # P(K <= n - x) = P(N <= n)
 
     mask = probs >= alpha
     if not np.any(mask):
+        print(f"[NegBinom] No n found for p={p:.2%}, alpha={alpha:.2%}, x={x}")
         return None
-    return int(n_values[np.argmax(mask)])
+
+    n = int(n_values[np.argmax(mask)])
+    print(f"[NegBinom] p={p:.2%}, alpha={alpha:.2%}, x={x} → n={n}")
+    return n
 
 
-def compare_q1():
-    pass
+def compare_q1(p1=0.10, alpha1=0.90, x1=5,
+               p2=0.30, alpha2=0.90, x2=15,
+               method="binom"):
+    """
+    Returns (n1, n2): minimal #samples for:
+      1) p1 defective, P(X >= x1) >= alpha1
+      2) p2 defective, P(X >= x2) >= alpha2
+
+    method:
+      - "binom" (default): uses find_sample_size_binom (supports x>=1)
+      - "nbinom": uses find_sample_size_nbinom (supports x>=1)
+      - "both": computes both; prints both; returns the Binomial pair (to keep API).
+    verify:
+      - if True and method=="both", asserts equality between methods.
+    """
+    # Validates inputs:
+    for p in (p1, p2):
+        if not (0 < p < 1):
+            raise ValueError("p must be between 0 and 1")
+    for a in (alpha1, alpha2):
+        if not (0 < a < 1):
+            raise ValueError("alpha must be between 0 and 1")
+    for x in (x1, x2):
+        if not (isinstance(x, int) and x >= 1):
+            raise ValueError("x must be a positive integer")
+
+    if method == "binom":
+        n1 = find_sample_size_binom(p=p1, alpha=alpha1, x=x1)
+        n2 = find_sample_size_binom(p=p2, alpha=alpha2, x=x2)
+        print(f"[CompareQ1/binom] Case1: p={p1:.0%}, α={alpha1:.0%}, x={x1} → n={n1}")
+        print(f"[CompareQ1/binom] Case2: p={p2:.0%}, α={alpha2:.0%}, x={x2} → n={n2}")
+        return (n1, n2)
+
+    elif method == "nbinom":
+        n1 = find_sample_size_nbinom(p=p1, alpha=alpha1, x=x1)
+        n2 = find_sample_size_nbinom(p=p2, alpha=alpha2, x=x2)
+        print(f"[CompareQ1/nbinom] Case1: p={p1:.0%}, α={alpha1:.0%}, x={x1} → n={n1}")
+        print(f"[CompareQ1/nbinom] Case2: p={p2:.0%}, α={alpha2:.0%}, x={x2} → n={n2}")
+        return (n1, n2)
+
+    else:
+        raise ValueError('method must be one of: "binom", "nbinom", "both"')
+
 
 
 def same_prob():

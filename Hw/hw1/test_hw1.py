@@ -24,6 +24,21 @@ def prob_at_least_one(n, p):
     """P(X>=1) = 1 - (1-p)^n for X~Binom(n,p)"""
     return 1.0 - (1.0 - p)**n
 
+def min_n_by_nbinom(p, alpha, x, n_max=100000):
+    """
+    Reference calculator for NegBin:
+    N = total trials to get x successes, K = failures = N - x  ~ nbinom(x, p).
+    Find minimal n such that P(N <= n) = P(K <= n - x) >= alpha.
+    """
+    if not (0 < p < 1) or not (0 < alpha < 1) or not (isinstance(x, int) and x >= 1):
+        raise ValueError("bad inputs for reference calc")
+    for n in range(x, n_max+1):
+        k = n - x
+        cdf = stats.nbinom.cdf(k, x, p) if k >= 0 else 0.0
+        if cdf >= alpha:
+            return n
+    return None
+
 
 # =========================
 # Q1(a): Binomial, x=1 — בדיקה מול נוסחה סגורה ומינימליות
@@ -84,7 +99,6 @@ def test_q1b_nbinom_matches_binom_when_x1(p, alpha):
     k_n    = n_nbinom - x
     k_prev = (n_nbinom - 1) - x
 
-    # SciPy מגדירה CDF רק ל-k≥0; אם k<0 אז P(K≤k)=0
     def cdf_failures_leq(k):
         if k < 0:
             return 0.0
@@ -95,6 +109,35 @@ def test_q1b_nbinom_matches_binom_when_x1(p, alpha):
 
     assert cdf_n >= alpha
     if n_nbinom > x:
+        assert cdf_prev < alpha
+
+
+# =========================
+# Q1(b) — כללי: x>1 (בדיקת התאמה לעוגן רפרנס)
+# =========================
+@pytest.mark.q1
+@pytest.mark.parametrize(
+    "p,alpha,x",
+    [
+        (0.10, 0.90, 5),   # חלק א' של compare_q1
+        (0.30, 0.90, 15),  # חלק ב' של compare_q1
+        (0.05, 0.95, 3),
+        (0.20, 0.80, 7),
+    ],
+)
+def test_q1b_nbinom_general_x_gt_1_against_reference(p, alpha, x):
+    n_ref = min_n_by_nbinom(p, alpha, x)
+    n_func = find_sample_size_nbinom(p=p, alpha=alpha, x=x)
+    assert isinstance(n_func, int) and n_func >= x
+    assert n_func == n_ref
+
+    # מינימליות
+    k_n = n_func - x
+    k_prev = (n_func - 1) - x
+    cdf_n = stats.nbinom.cdf(k_n, x, p) if k_n >= 0 else 0.0
+    cdf_prev = stats.nbinom.cdf(k_prev, x, p) if k_prev >= 0 else 0.0
+    assert cdf_n >= alpha
+    if n_func > x:
         assert cdf_prev < alpha
 
 
@@ -125,9 +168,7 @@ def test_q1_invalid_x_for_nbinom_raises(bad_x):
 
 
 # =========================
-# תכונות נדרשות: מונוטוניות
-#   • ככל ש-alpha גדל, n לא קטן
-#   • ככל ש-p גדל, n לא גדל (קל יותר להגיע ללפחות אחד)
+# תכונות נדרשות: מונוטוניות (על binom x=1)
 # =========================
 @pytest.mark.q1
 def test_q1_monotonic_in_alpha():
@@ -150,3 +191,64 @@ def test_q1_deterministic_same_inputs_same_output():
     n1 = find_sample_size_binom(p, alpha)
     n2 = find_sample_size_binom(p, alpha)
     assert n1 == n2
+
+
+# =========================
+# אופציונלי: compare_q1 אם קיים
+# =========================
+def test_q1_compare_q1_if_exists():
+    try:
+        from hw1 import compare_q1
+    except Exception:
+        pytest.skip("compare_q1 not implemented; skipping.")
+        return
+
+    # ברירות המחדל: (0.10, 0.90, 5) ו-(0.30, 0.90, 15)
+    n1, n2 = compare_q1()
+    assert isinstance(n1, int) and isinstance(n2, int)
+
+    # אימות מול מחשבון רפרנס
+    assert n1 == min_n_by_nbinom(0.10, 0.90, 5)
+    assert n2 == min_n_by_nbinom(0.30, 0.90, 15)
+
+# =========================
+# השוואת שיטות: binom vs nbinom
+# =========================
+
+@pytest.mark.q1
+def test_q1_compare_q1_methods_agree():
+    """
+    verify that compare_q1 returns the same (n1,n2) with both methods
+    """
+    try:
+        from hw1 import compare_q1
+    except Exception:
+        pytest.skip("compare_q1 not implemented; skipping.")
+        return
+
+    n_binom = compare_q1(method="binom")
+    n_nbinom = compare_q1(method="nbinom")
+    assert isinstance(n_binom, tuple) and isinstance(n_nbinom, tuple)
+    assert n_binom == n_nbinom
+
+
+@pytest.mark.q1
+@pytest.mark.parametrize(
+    "p,alpha,x",
+    [
+        (0.03, 0.85, 1),    # x=1 (נוסחה סגורה מול NegBin)
+        (0.03, 0.95, 1),
+        (0.10, 0.90, 5),    # x>1 כמו ב-compare_q1 (חלק א)
+        (0.30, 0.90, 15),   # x>1 כמו ב-compare_q1 (חלק ב)
+        (0.05, 0.95, 3),    # עוד מקרה כללי לבדיקה
+    ],
+)
+def test_q1_binom_equals_nbinom_general(p, alpha, x):
+    """
+    verify that find_sample_size_binom(p,alpha,x) == find_sample_size_nbinom(p,alpha,x)
+    for several (p,alpha,x) including x>1
+    """
+    n_b = find_sample_size_binom(p=p, alpha=alpha, x=x)
+    n_nb = find_sample_size_nbinom(p=p, alpha=alpha, x=x)
+    assert isinstance(n_b, int) and isinstance(n_nb, int)
+    assert n_b == n_nb
