@@ -122,7 +122,6 @@ def compare_q1(p1=0.10, alpha1=0.90, x1=5,
         raise ValueError('method must be one of: "binom", "nbinom", "both"')
 
 
-
 def same_prob():
     pass
 
