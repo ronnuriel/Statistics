@@ -9,7 +9,17 @@ import math
 import numpy as np
 import pytest
 
-from hw1 import *
+from hw1 import (
+    find_sample_size_binom, 
+    find_sample_size_nbinom, 
+    same_prob,
+    empirical_centralized_third_moment,
+    class_moment,
+    plot_moments,
+    plot_moments_smaller_variance,
+    NFoldConv,
+    plot_dist
+)
 from scipy import stats  # SciPy is required here
 
 
