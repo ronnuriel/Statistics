@@ -352,6 +352,9 @@ def evenBinom(n, p):
     Returns:
     - prob: The output probability.
     """
+    # We will calculate P(X is even) = P(X=0) + P(X=2) + ... + P(X=k) where k is the largest even number <= n
+    even_arr = np.arange(0, n + 1, 2) # even numbers from 0 to n
+    prob = np.sum(stats.binom.pmf(even_arr, n, p)) # sum of probabilities for even outcomes
 
     return prob
 
@@ -367,7 +370,46 @@ def evenBinomFormula(n, p):
     Returns:
     - prob: The output probability.
     """
+    # Lets look at the definition of binomial distribution:
+    # from the binomial theorem we know that:
+    # (q + p)^n = sum_{k=0}^{n} C(n, k) * p^k * q^(n-k)
+    # where q = 1 - p (the probability of failure)
+    # (p + (1 - p))^n = 1^n = 1
+    # So we have:
+    # 1 = S_even + S_odd
 
+    # We want to find an expression for S_even to Solve the equation above.:
+    # S_even - S_odd = ?
+    # We can make S_odd negative if we will choose p with -p:
+    # It will give us (q - p)^n = sum_{k=0}^{n} C(n, k) * (-p)^k * q^(n-k) -> when k is odd we get negative sign.
+
+    #Now we have:
+    # 1 = S_even + S_odd
+    # (1 - 2p)^n = S_even - S_odd
+
+    # We can solve the system of equations:
+    # 2*S_even = 1 + (1 - 2p)^n => S_even = (1 + (1 - 2p)^n) / 2
+
+    # Therefore, the probability that X is even is:
+    # P(X is even) = S_even = (1 + (1 - 2p)^n) / 2
+
+    print("=== Proof for P(X is even) ===")
+    print("From the Binomial theorem:")
+    print("  (q + p)^n = sum_{k=0}^{n} C(n, k) * p^k * q^(n-k)")
+    print("Let q = 1 - p → (p + (1 - p))^n = 1 = S_even + S_odd")
+    print("Now consider (q - p)^n = sum_{k=0}^{n} C(n, k) * (-p)^k * q^(n-k)")
+    print("→ When k is odd, the term becomes negative, so:")
+    print("  (1 - 2p)^n = S_even - S_odd")
+    print("We now have two equations:")
+    print("  1 = S_even + S_odd")
+    print("  (1 - 2p)^n = S_even - S_odd")
+    print("Solving these gives:")
+    print("  2*S_even = 1 + (1 - 2p)^n")
+    print("Therefore:")
+    print("  P(X is even) = S_even = (1 + (1 - 2p)^n) / 2\n")
+
+    prob = (1 + (1 - 2 * p) ** n) / 2
+    print(f"For n={n}, p={p}: P(X is even) = {prob:.6f}")
     return prob
 
 

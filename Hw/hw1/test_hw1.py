@@ -18,7 +18,8 @@ from hw1 import (
     plot_moments,
     plot_moments_smaller_variance,
     NFoldConv,
-    plot_dist
+    plot_dist,
+    evenBinom
 )
 from scipy import stats  # SciPy is required here
 
@@ -415,3 +416,120 @@ def test_q3_plot_dist_runs_without_error():
 
     P = {0: 0.2, 1: 0.3, 3: 0.5}
     _ = plot_dist(P)
+
+def closed_form(n: int, p: float) -> float:
+    # P(X is even) = (1 + (1 - 2p)^n) / 2  for X ~ Binom(n, p)
+    return 0.5 * (1.0 + (1.0 - 2.0 * p) ** n)
+
+
+@pytest.mark.parametrize(
+    "n,p",
+    [
+        (0, 0.00),
+        (0, 0.25),
+        (0, 0.50),
+        (0, 0.90),
+        (1, 0.50),
+        (2, 0.10),
+        (3, 0.50),
+        (4, 0.50),
+        (5, 0.30),
+        (10, 0.10),
+        (10, 0.50),
+        (12, 0.75),
+        (25, 0.33),
+    ],
+)
+def test_evenBinom_matches_closed_form(n, p):
+    val = evenBinom(n, p)
+    exp = closed_form(n, p)
+    assert isinstance(val, (float, np.floating))
+    assert np.isfinite(val)
+    assert np.isclose(val, exp, atol=1e-12), f"n={n}, p={p}: got {val}, expected {exp}"
+
+
+@pytest.mark.parametrize(
+    "n,p",
+    [(k, q) for k in [0, 1, 2, 3, 5, 10, 25] for q in [0.0, 0.1, 0.5, 0.9, 1.0]]
+)
+def test_evenBinom_in_probability_range(n, p):
+    val = evenBinom(n, p)
+    assert 0.0 - 1e-15 <= val <= 1.0 + 1e-15, f"Out of [0,1] range: {val}"
+    assert np.isfinite(val)
+
+
+def test_evenBinom_edge_cases_n0_any_p():
+    # אם n=0 אז X=0 בהסתברות 1 -> זוגי תמיד
+    for p in [0.0, 0.2, 0.5, 1.0]:
+        assert np.isclose(evenBinom(0, p), 1.0, atol=1e-12)
+
+
+@pytest.mark.parametrize("n", [1, 2, 3, 10, 25])
+def test_evenBinom_edge_cases_p0(n):
+    # אם p=0 אז X=0 תמיד -> זוגי תמיד
+    assert np.isclose(evenBinom(n, 0.0), 1.0, atol=1e-12)
+
+
+@pytest.mark.parametrize("n", [1, 2, 3, 10, 25])
+def test_evenBinom_edge_cases_p1(n):
+    # אם p=1 אז X=n תמיד -> זוגי אם ורק אם n זוגי
+    expected = 1.0 if n % 2 == 0 else 0.0
+    assert np.isclose(evenBinom(n, 1.0), expected, atol=1e-12)
+
+# test_evenBinomFormula.py
+import numpy as np
+import pytest
+
+# מניח שהפונקציה מוגדרת ב-hw1.py
+from hw1 import evenBinomFormula
+
+
+def closed_form(n: int, p: float) -> float:
+    # P(X is even) = (1 + (1 - 2p)^n) / 2
+    return 0.5 * (1.0 + (1.0 - 2.0 * p) ** n)
+
+
+@pytest.mark.parametrize(
+    "n,p",
+    [
+        (0, 0.00),
+        (0, 0.25),
+        (0, 0.50),
+        (0, 0.90),
+        (1, 0.50),
+        (2, 0.10),
+        (3, 0.50),
+        (4, 0.50),
+        (5, 0.30),
+        (10, 0.10),
+        (10, 0.50),
+        (12, 0.75),
+        (25, 0.33),
+    ],
+)
+def test_evenBinomFormula_matches_closed_form_and_in_range(n, p):
+    val = evenBinomFormula(n, p)
+    exp = closed_form(n, p)
+    assert isinstance(val, (float, np.floating))
+    assert np.isfinite(val)
+    # ערך נכון לפי הנוסחה
+    assert np.isclose(val, exp, atol=1e-12), f"n={n}, p={p}: got {val}, expected {exp}"
+    # טווח הסתברויות
+    assert -1e-15 <= val <= 1.0 + 1e-15
+
+
+@pytest.mark.parametrize("n", [0, 1, 2, 3, 5, 10, 25])
+def test_evenBinomFormula_p_equals_half_is_half(n):
+    # כש-p=0.5, (1-2p)^n = 0^n ⇒ עבור n>=1 זה 0 ⇒ תוצאה 0.5; וגם ל-n=0 מתקבל 1.
+    val = evenBinomFormula(n, 0.5)
+    expected = 1.0 if n == 0 else 0.5
+    assert np.isclose(val, expected, atol=1e-12)
+
+
+@pytest.mark.parametrize("n", [0, 1, 2, 3, 10, 24])
+def test_evenBinomFormula_edge_cases_p0_p1(n):
+    # p=0: תמיד 0 הצלחות ⇒ זוגי ⇒ הסתברות 1
+    assert np.isclose(evenBinomFormula(n, 0.0), 1.0, atol=1e-12)
+    # p=1: תמיד n הצלחות ⇒ זוגי אם ורק אם n זוגי
+    expected = 1.0 if (n % 2 == 0) else 0.0
+    assert np.isclose(evenBinomFormula(n, 1.0), expected, atol=1e-12)
