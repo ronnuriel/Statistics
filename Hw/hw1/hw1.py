@@ -12,38 +12,51 @@ import matplotlib.pyplot as plt
 
 ### Question 1 ###
 
-def find_sample_size_binom(p=0.03, alpha=0.85, x=1):
+def find_sample_size_binom(defective_rate=0.03, target_prob=0.85, x=1):
     """
-    Finds minimal n such that P(X >= x) >= alpha, where X~Binomial(n,p).
+        Using Binom to returns the minimal number of samples required to have requested probability
+        (target_prob) of receiving at least x defective products from a production line
+        with a defective_rate.
 
-    • For x = 1 → uses closed-form: n = ceil(ln(1-alpha)/ln(1-p))
-    • For x > 1 → computes 1 - CDF(x-1; n, p) iteratively.
+        • For x = 1 → uses a closed-form formula:
+            # P(at least 1 defective) = 1 - P(0 defective) >= target_prob
+            # 1 - (1 - defective_rate)^n >= target_prob
+            # (1 - defective_rate)^n <= 1 - target_prob
+            # n * log(1 - defective_rate) <= log(1 - target_prob)
+            # n >= log(1 - target_prob) / log(1 - defective_rate)  (Dividing by negative flips inequality)
 
-    Validates inputs: 0 < p < 1, 0 < alpha < 1, x ≥ 1 (integer)
+        • For x > 1 → computes 1 - CDF(x-1; n, p) iteratively.
+        Validates inputs:
+          0 < defective_rate < 1
+          0 < target_prob < 1
+          x ≥ 1 (integer)
     """
-    if not (0 < p < 1):
-        raise ValueError("p must be between 0 and 1")
-    if not (0 < alpha < 1):
-        raise ValueError("alpha must be between 0 and 1")
+    if not (0 < defective_rate < 1):
+        raise ValueError("defective_rate must be between 0 and 1")
+    if not (0 < target_prob < 1):
+        raise ValueError("target_prob must be between 0 and 1")
     if x < 1 or not isinstance(x, int):
         raise ValueError("x must be a positive integer")
 
     if x == 1:
-        n_real = np.log(1 - alpha) / np.log(1 - p)
+        n_real = np.log(1 - target_prob) / np.log(1 - defective_rate)
         n = int(np.ceil(n_real))
-        print(f"[Binom] p={p:.2%}, α={alpha:.2%}, x={x} → n={n}")
+        print(f"To have a {target_prob:.0%} probability of at least one defective product, "
+              f"we need to ask for {n} independent samples.")
+
+        print(f"[Binom] p={defective_rate:.2%}, α={target_prob:.2%}, x={x} → n={n}")
         return n
 
     # General case: numerical search
     n_values = np.arange(x, 10000, dtype=int)
-    probs = 1 - stats.binom.cdf(x - 1, n_values, p)
-    mask = probs >= alpha
+    probs = 1 - stats.binom.cdf(x - 1, n_values, defective_rate)
+    mask = probs >= target_prob
     if not np.any(mask):
-        print(f"[Binom] No n found for p={p:.2%}, α={alpha:.2%}, x={x}")
+        print(f"[Binom] No n found for p={defective_rate:.2%}, α={target_prob:.2%}, x={x}")
         return None
 
     n = int(n_values[np.argmax(mask)])
-    print(f"[Binom] p={p:.2%}, α={alpha:.2%}, x={x} → n={n}")
+    print(f"[Binom] p={defective_rate:.2%}, α={target_prob:.2%}, x={x} → n={n}")
     return n
 
 
@@ -102,8 +115,8 @@ def compare_q1(p1=0.10, alpha1=0.90, x1=5,
             raise ValueError("x must be a positive integer")
 
     if method == "binom":
-        n1 = find_sample_size_binom(p=p1, alpha=alpha1, x=x1)
-        n2 = find_sample_size_binom(p=p2, alpha=alpha2, x=x2)
+        n1 = find_sample_size_binom(defective_rate=p1, target_prob=alpha1, x=x1)
+        n2 = find_sample_size_binom(defective_rate=p2, target_prob=alpha2, x=x2)
         print(f"[CompareQ1/binom] Case1: p={p1:.0%}, α={alpha1:.0%}, x={x1} → n={n1}")
         print(f"[CompareQ1/binom] Case2: p={p2:.0%}, α={alpha2:.0%}, x={x2} → n={n2}")
         return (n1, n2)

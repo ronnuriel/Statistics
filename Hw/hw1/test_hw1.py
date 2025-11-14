@@ -55,7 +55,7 @@ def min_n_by_nbinom(p, alpha, x, n_max=100000):
     ],
 )
 def test_q1a_binom_closed_form_minimal(p, alpha, expected):
-    n = find_sample_size_binom(p=p, alpha=alpha)
+    n = find_sample_size_binom(defective_rate=p, target_prob=alpha)
     assert isinstance(n, int) and n >= 1
     assert n == expected
 
@@ -86,7 +86,7 @@ def test_q1b_nbinom_matches_binom_when_x1(p, alpha):
     x = 1
 
     # Binomial (x=1) — נוסחה סגורה
-    n_binom = find_sample_size_binom(p=p, alpha=alpha)
+    n_binom = find_sample_size_binom(defective_rate=p, target_prob=alpha)
 
     # Negative Binomial — P(N≤n) עם Y~NegBin(x,p)
     n_nbinom = find_sample_size_nbinom(p=p, alpha=alpha, x=x)
@@ -146,7 +146,7 @@ def test_q1b_nbinom_general_x_gt_1_against_reference(p, alpha, x):
 @pytest.mark.parametrize("bad_p", [0.0, 1.0, -0.1, 1.2])
 def test_q1_invalid_p_raises(bad_p):
     with pytest.raises(ValueError):
-        find_sample_size_binom(p=bad_p, alpha=0.85)
+        find_sample_size_binom(defective_rate=bad_p, target_prob=0.85)
     with pytest.raises(ValueError):
         find_sample_size_nbinom(p=bad_p, alpha=0.85, x=1)
 
@@ -154,7 +154,7 @@ def test_q1_invalid_p_raises(bad_p):
 @pytest.mark.parametrize("bad_alpha", [0.0, 1.0, -0.2, 1.3])
 def test_q1_invalid_alpha_raises(bad_alpha):
     with pytest.raises(ValueError):
-        find_sample_size_binom(p=0.03, alpha=bad_alpha)
+        find_sample_size_binom(defective_rate=0.03, target_prob=bad_alpha)
     with pytest.raises(ValueError):
         find_sample_size_nbinom(p=0.03, alpha=bad_alpha, x=1)
 
@@ -170,16 +170,16 @@ def test_q1_invalid_x_for_nbinom_raises(bad_x):
 # =========================
 def test_q1_monotonic_in_alpha():
     p = 0.04
-    n1 = find_sample_size_binom(p, alpha=0.80)
-    n2 = find_sample_size_binom(p, alpha=0.85)
-    n3 = find_sample_size_binom(p, alpha=0.90)
+    n1 = find_sample_size_binom(p, target_prob=0.80)
+    n2 = find_sample_size_binom(p, target_prob=0.85)
+    n3 = find_sample_size_binom(p, target_prob=0.90)
     assert n1 <= n2 <= n3
 
 
 def test_q1_monotonic_in_p():
     alpha = 0.9
-    n_small_p = find_sample_size_binom(p=0.02, alpha=alpha)
-    n_big_p = find_sample_size_binom(p=0.05, alpha=alpha)
+    n_small_p = find_sample_size_binom(defective_rate=0.02, target_prob=alpha)
+    n_big_p = find_sample_size_binom(defective_rate=0.05, target_prob=alpha)
     assert n_big_p <= n_small_p
 
 
@@ -244,7 +244,7 @@ def test_q1_binom_equals_nbinom_general(p, alpha, x):
     verify that find_sample_size_binom(p,alpha,x) == find_sample_size_nbinom(p,alpha,x)
     for several (p,alpha,x) including x>1
     """
-    n_b = find_sample_size_binom(p=p, alpha=alpha, x=x)
+    n_b = find_sample_size_binom(defective_rate=p, target_prob=alpha, x=x)
     n_nb = find_sample_size_nbinom(p=p, alpha=alpha, x=x)
     assert isinstance(n_b, int) and isinstance(n_nb, int)
     assert n_b == n_nb
