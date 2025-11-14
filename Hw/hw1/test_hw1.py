@@ -89,7 +89,7 @@ def test_q1b_nbinom_matches_binom_when_x1(p, alpha):
     n_binom = find_sample_size_binom(defective_rate=p, target_prob=alpha)
 
     # Negative Binomial — P(N≤n) עם Y~NegBin(x,p)
-    n_nbinom = find_sample_size_nbinom(p=p, alpha=alpha, x=x)
+    n_nbinom = find_sample_size_nbinom(defective_rate=p, target_prob=alpha, x=x)
     assert isinstance(n_nbinom, int) and n_nbinom >= x
 
     # שתי הגישות חייבות להסכים
@@ -126,7 +126,7 @@ def test_q1b_nbinom_matches_binom_when_x1(p, alpha):
 )
 def test_q1b_nbinom_general_x_gt_1_against_reference(p, alpha, x):
     n_ref = min_n_by_nbinom(p, alpha, x)
-    n_func = find_sample_size_nbinom(p=p, alpha=alpha, x=x)
+    n_func = find_sample_size_nbinom(defective_rate=p, target_prob=alpha, x=x)
     assert isinstance(n_func, int) and n_func >= x
     assert n_func == n_ref
 
@@ -148,7 +148,7 @@ def test_q1_invalid_p_raises(bad_p):
     with pytest.raises(ValueError):
         find_sample_size_binom(defective_rate=bad_p, target_prob=0.85)
     with pytest.raises(ValueError):
-        find_sample_size_nbinom(p=bad_p, alpha=0.85, x=1)
+        find_sample_size_nbinom(defective_rate=bad_p, target_prob=0.85, x=1)
 
 
 @pytest.mark.parametrize("bad_alpha", [0.0, 1.0, -0.2, 1.3])
@@ -156,13 +156,13 @@ def test_q1_invalid_alpha_raises(bad_alpha):
     with pytest.raises(ValueError):
         find_sample_size_binom(defective_rate=0.03, target_prob=bad_alpha)
     with pytest.raises(ValueError):
-        find_sample_size_nbinom(p=0.03, alpha=bad_alpha, x=1)
+        find_sample_size_nbinom(defective_rate=0.03, target_prob=bad_alpha, x=1)
 
 
 @pytest.mark.parametrize("bad_x", [0, -1, 1.5, 2.0])
 def test_q1_invalid_x_for_nbinom_raises(bad_x):
     with pytest.raises(ValueError):
-        find_sample_size_nbinom(p=0.03, alpha=0.85, x=bad_x)
+        find_sample_size_nbinom(defective_rate=0.03, target_prob=0.85, x=bad_x)
 
 
 # =========================
@@ -245,17 +245,29 @@ def test_q1_binom_equals_nbinom_general(p, alpha, x):
     for several (p,alpha,x) including x>1
     """
     n_b = find_sample_size_binom(defective_rate=p, target_prob=alpha, x=x)
-    n_nb = find_sample_size_nbinom(p=p, alpha=alpha, x=x)
+    n_nb = find_sample_size_nbinom(defective_rate=p, target_prob=alpha, x=x)
     assert isinstance(n_b, int) and isinstance(n_nb, int)
     assert n_b == n_nb
 
 
-def test_q1_same_prob_basic():
-    # ערכים טיפוסיים מסעיף Q1.C (התאם לפי המטלה אם צריך)
-    n = same_prob(p=0.10, x=5, n_max=2000, atol=1e-2)
-    assert (n is None) or (isinstance(n, int) and n >= 5)
-    if n is not None:
-        p_binom = 1 - stats.binom.cdf(4, n, 0.10)
-        p_nbinom = stats.nbinom.cdf(n - 5, 5, 0.10)
-        assert p_binom > 0 and p_nbinom > 0
-        assert np.isclose(p_binom, p_nbinom, atol=1e-2)
+def test_same_prob_basic_behavior():
+    """
+    Tests that same_prob returns an integer n such that:
+    P(X>=k1; n, p1) ≈ P(X>=k2; n, p2) within atol=1e-2,
+    when both probabilities are > 0.
+    """
+    n = same_prob()
+    assert isinstance(n, int)
+
+    p1, k1 = 0.10, 5
+    p2, k2 = 0.30, 15
+    atol = 1e-2
+
+    p_case1 = stats.binom.sf(k1 - 1, n, p1)
+    p_case2 = stats.binom.sf(k2 - 1, n, p2)
+
+    assert p_case1 > 0 and p_case2 > 0
+    assert np.isclose(p_case1, p_case2, atol=atol), (
+        f"Probabilities not close enough: {p_case1} vs {p_case2}"
+    )
+
