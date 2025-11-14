@@ -476,14 +476,6 @@ def test_evenBinom_edge_cases_p1(n):
     expected = 1.0 if n % 2 == 0 else 0.0
     assert np.isclose(evenBinom(n, 1.0), expected, atol=1e-12)
 
-# test_evenBinomFormula.py
-import numpy as np
-import pytest
-
-# מניח שהפונקציה מוגדרת ב-hw1.py
-from hw1 import evenBinomFormula
-
-
 def closed_form(n: int, p: float) -> float:
     # P(X is even) = (1 + (1 - 2p)^n) / 2
     return 0.5 * (1.0 + (1.0 - 2.0 * p) ** n)
@@ -533,3 +525,35 @@ def test_evenBinomFormula_edge_cases_p0_p1(n):
     # p=1: תמיד n הצלחות ⇒ זוגי אם ורק אם n זוגי
     expected = 1.0 if (n % 2 == 0) else 0.0
     assert np.isclose(evenBinomFormula(n, 1.0), expected, atol=1e-12)
+
+from hw1 import evenBinom, evenBinomFormula
+import numpy as np
+import pytest
+
+
+@pytest.mark.parametrize(
+    "n,p",
+    [
+        (0, 0.0),
+        (0, 0.5),
+        (1, 0.1),
+        (2, 0.5),
+        (3, 0.3),
+        (4, 0.5),
+        (5, 0.75),
+        (10, 0.5),
+        (12, 0.25),
+        (20, 0.9),
+    ],
+)
+def test_evenBinom_matches_evenBinomFormula(n, p):
+    """
+    Ensure that evenBinom (pmf-based) and evenBinomFormula (closed-form)
+    return equivalent probabilities.
+    """
+    val_formula = evenBinomFormula(n, p)
+    val_pmf = evenBinom(n, p)
+    assert np.isclose(val_formula, val_pmf, atol=1e-12), (
+        f"Mismatch: n={n}, p={p}, "
+        f"formula={val_formula}, pmf={val_pmf}"
+    )
