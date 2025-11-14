@@ -9,7 +9,7 @@ import math
 import numpy as np
 import pytest
 
-from hw1 import find_sample_size_binom, find_sample_size_nbinom, same_prob
+from hw1 import *
 from scipy import stats  # SciPy is required here
 
 
@@ -271,3 +271,137 @@ def test_same_prob_basic_behavior():
         f"Probabilities not close enough: {p_case1} vs {p_case2}"
     )
 
+#
+# ----------------------- Question 2 -----------------------
+#
+
+def test_q2_empirical_centralized_third_moment_runs_and_is_float():
+    """
+    2.A: נדרש לבצע סימולציה אמפירית (k=100 נסיונות) ולחשב מומנט מרכזי שלישי של Y.
+    הבדיקה בודקת רק שהפונקציה רצה ומחזירה מספר סופי (float),
+    בלי לאכוף קרבה מספרית לערך תיאורטי (כדי לשקף את אופי הסימולציה בשאלה).
+    """
+    try:
+        from hw1 import empirical_centralized_third_moment
+    except Exception:
+        pytest.skip("empirical_centralized_third_moment not implemented; skipping.")
+        return
+
+    emp = empirical_centralized_third_moment()
+    assert isinstance(emp, (float, np.floating))
+    assert np.isfinite(emp)
+
+
+def test_q2_class_moment_runs_and_is_float():
+    """
+    2.B: נדרש לחשב את המומנט השלישי המרכזי באופן תיאורטי/כיתתי.
+    בודקים שהפונקציה רצה ומחזירה מספר סופי (float).
+    """
+    try:
+        from hw1 import class_moment
+    except Exception:
+        pytest.skip("class_moment not implemented; skipping.")
+        return
+
+    theo = class_moment()
+    assert isinstance(theo, (float, np.floating))
+    assert np.isfinite(theo)
+
+
+def test_q2_plot_moments_runs_without_error():
+    """
+    2.C: פונקציה שמציירת/מחזירה אובייקט גרפי – השאלה דורשת הפקה/הדגמה,
+    לא אימות תקני מסוים. הבדיקה רק מאשרת שהיא רצה ללא חריגות.
+    """
+    try:
+        from hw1 import plot_moments
+    except Exception:
+        pytest.skip("plot_moments not implemented; skipping.")
+        return
+
+    _ = plot_moments()  # אין דרישה להגדרת ערך החזרה
+
+
+def test_q2_plot_moments_smaller_variance_runs_without_error():
+    """
+    2.D: כמו 2.C – רק לבדוק שהפונקציה רצה, בהתאם לדרישה בשאלה.
+    """
+    try:
+        from hw1 import plot_moments_smaller_variance
+    except Exception:
+        pytest.skip("plot_moments_smaller_variance not implemented; skipping.")
+        return
+
+    _ = plot_moments_smaller_variance()
+
+
+#
+# ----------------------- Question 3 -----------------------
+#
+
+def _expected_binomial_dict(n, p):
+    from math import comb
+    return {k: comb(n, k) * (p ** k) * ((1 - p) ** (n - k)) for k in range(n + 1)}
+
+
+def _to_dict_distribution(Q):
+    """
+    מאחד פלט ל-dict עבור השוואה נוחה.
+    תומך ב-{val:prob} או np.array([[values],[probs]]).
+    """
+    if isinstance(Q, dict):
+        return {int(k): float(v) for k, v in Q.items()}
+    Q = np.asarray(Q)
+    if Q.ndim == 2 and Q.shape[0] == 2:
+        vals, probs = Q
+        return {int(v): float(p) for v, p in zip(vals, probs)}
+    raise TypeError("Unexpected NFoldConv output type (expected dict or 2xM array)")
+
+
+def test_q3_nfoldconv_coin_basic_properties_and_binomial_case():
+    """
+    3.A: השאלה מבקשת לייצר את התפלגות סכום n חזרות i.i.d. עם התפלגות P.
+    כדי לוודא נכונות לוגית בצורה התואמת את רוח השאלה, נבדוק:
+      1) הפונקציה רצה ומחזירה התפלגות חוקית (סכום הסתברויות ~ 1, הסתברויות >= 0)
+      2) במקרה מבחן קלאסי: P של מטבע הוגן, n=3 ⇒ תואם לבינומי
+    לא נכפה פורמט פלט ספציפי: מתקבלים גם dict וגם np.array([[values],[probs]]).
+    """
+    try:
+        from hw1 import NFoldConv
+    except Exception:
+        pytest.skip("NFoldConv not implemented; skipping.")
+        return
+
+    # קלט של מטבע הוגן
+    P_dict = {0: 0.5, 1: 0.5}
+    n = 3
+
+    Q = NFoldConv(P_dict, n)
+    Qd = _to_dict_distribution(Q)
+
+    # 1) בדיקות בסיסיות של התפלגות
+    total_prob = sum(Qd.values())
+    assert np.isclose(total_prob, 1.0, atol=1e-12)
+    assert all(p >= -1e-15 for p in Qd.values())  # מאפשר רפרוף נומרי קטן מאוד
+    assert all(isinstance(k, (int, np.integer)) for k in Qd.keys())
+
+    # 2) התאמה לבינומי במקרה מבחן סטנדרטי
+    expected = _expected_binomial_dict(n, 0.5)
+    for k, p_exp in expected.items():
+        p_got = Qd.get(k, 0.0)
+        assert np.isclose(p_got, p_exp, atol=1e-12), f"k={k}: got {p_got}, expected {p_exp}"
+
+
+def test_q3_plot_dist_runs_without_error():
+    """
+    3.B: הפונקציה אמורה להציג/להחזיר ציור של התפלגות בדידה.
+    נבדוק רק שהיא רצה ללא חריגות, בהתאם לרוח השאלה.
+    """
+    try:
+        from hw1 import plot_dist
+    except Exception:
+        pytest.skip("plot_dist not implemented; skipping.")
+        return
+
+    P = {0: 0.2, 1: 0.3, 3: 0.5}
+    _ = plot_dist(P)

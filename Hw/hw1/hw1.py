@@ -167,6 +167,7 @@ def same_prob(p1=0.1, k1=5, p2=0.3, k2=15):
 
     return None  # In case no suitable n is found within the defined range.
 
+
 ### Question 2 ###
 
 def empirical_centralized_third_moment(n=20, p=[0.2, 0.1, 0.1, 0.1, 0.2, 0.3], k=100, seed=None):
@@ -177,26 +178,98 @@ def empirical_centralized_third_moment(n=20, p=[0.2, 0.1, 0.1, 0.1, 0.2, 0.3], k
     if seed is not None:
         np.random.seed(seed)
 
+    # 1. Perform k experiments. The result is a (k, 6) array.
+    X_samples = np.random.multinomial(n, p, size=k)
+
+    # 2. Calculate Y for each experiment. Y is the sum of elements at indices 1, 2, 3 (which correspond to X2, X3, X4).
+    # The result is a 1D array of length k.
+    Y_samples = np.sum(X_samples[:, 1:4], axis=1)
+
+    # 3. Calculate the empirical mean of Y.
+    y_mean = np.mean(Y_samples)
+
+    # 4. Calculate the empirical centralized third moment: mean of (value minus mean) cubed.
+    empirical_moment = np.mean((Y_samples - y_mean) ** 3)
     return empirical_moment
 
 
-def class_moment():
+def class_moment(n=20, p=0.3):
+    moment = n * p * (1 - p) * (1 - 2 * p)
     return moment
 
 
-def plot_moments():
+def plot_moments(num_experiments=1000, k=100):
+    moments = np.array([
+        empirical_centralized_third_moment()
+        for _ in range(num_experiments)
+    ])
+
+    true_mu3 = class_moment()
+    plt.figure(figsize=(10, 6))
+    plt.hist(moments, bins=30, alpha=0.7, edgecolor='black')
+
+    # Step 4: Add vertical red line for theoretical value
+    plt.axvline(true_mu3, color='red', linestyle='dashed', linewidth=2,
+                label=f'Theoretical: {true_mu3:.4f}')
+
+    plt.title("Distribution of Empirical Centralized Third Moments")
+    plt.xlabel("Third Central Moment Value")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+    # Step 5: Calculate and return variance of this distribution
+    dist_var = np.var(moments)
+    print(f"Variance of the distribution with k={k}: {dist_var:.6f}")
+
     return dist_var
 
 
-def plot_moments_smaller_variance():
-    return dist_var
+def plot_moments_smaller_variance(num_experiments=1000, k=1000):
+    """
+    By increasing 'k' (e.g., from 100 to 1000), each individual empirical
+        moment we calculate becomes more accurate and less noisy.
+        This means the distribution of these 1000 moments will be much
+        narrower (i.e., it will have a smaller variance) and more tightly
+        clustered around the true theoretical value.
+    """
+
+    moments = np.array([
+        empirical_centralized_third_moment(k=k)
+        for _ in range(num_experiments)
+    ])
+
+    # Step 2: Get the theoretical third moment from class
+    true_mu3 = class_moment()
+
+    # Step 3: Create histogram with 30 bins
+    plt.figure(figsize=(10, 6))
+    plt.hist(moments, bins=30, alpha=0.7, edgecolor='black')
+
+    # Step 4: Add vertical red line for theoretical value
+    plt.axvline(true_mu3, color='red', linestyle='dashed', linewidth=2,
+                label=f'Theoretical value: {true_mu3:.4f}')
+
+    plt.title(f"Distribution of Empirical Third Moments (k={k})")
+    plt.xlabel("Third Central Moment Value")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+    # Step 5: Calculate and return the variance of the distribution
+    variance_of_moments = np.var(moments)
+    print(f"Variance of the distribution with k={k}: {variance_of_moments:.6f}")
+
+    return variance_of_moments
 
 
 ### Question 3 ###
 
-def NFoldConv(P, n):
+def NFoldConv(P=np.array([[0, 1], [0.5, 0.5]]), n=2):
     """
-    Calculating the distribution, Q, of the sum of n independent repeats of random variables, 
+    Calculating the distribution, Q, of the sum of n independent repeats of random variables,
     each of which has the distribution P.
 
     Input:
@@ -207,18 +280,67 @@ def NFoldConv(P, n):
     - Q: 2d numpy array: [[values], [probabilities]].
     """
 
+    if isinstance(P, dict):
+        values = np.array(list(P.keys()))
+        probs = np.array(list(P.values()))
+    elif isinstance(P, (list, tuple)) and len(P) == 2:
+        values, probs = map(np.asarray, P)
+    else:
+        P = np.asarray(P)
+        values, probs = P[0], P[1]
+
+    # values = P[0].astype(int)
+    # probs = P[1]
+
+    if n == 1:
+        return P.copy()
+
+    result_values = values.copy()
+    result_probs = probs.copy()
+
+    for _ in range(n - 1):
+        # Create meshgrid of all combinations
+        v1_grid, v2_grid = np.meshgrid(result_values, values)
+        p1_grid, p2_grid = np.meshgrid(result_probs, probs)
+
+        # Calculate all possible sums and probabilities
+        all_sums = (v1_grid + v2_grid).flatten()
+        all_probs = (p1_grid * p2_grid).flatten()
+
+        # Group by sum value and add probabilities
+        unique_vals = np.unique(all_sums)
+        new_probs = np.array([
+            all_probs[all_sums == val].sum()
+            for val in unique_vals
+        ])
+
+        result_values = unique_vals
+        result_probs = new_probs
+
+    Q = np.array([result_values, result_probs])
+
     return Q
 
 
-def plot_dist(P):
+def plot_dist(P=np.array([[0, 1], [0.5, 0.5]])):
     """
     Ploting the distribution P using barplot.
 
     Input:
     - P: 2d numpy array: [[values], [probabilities]].
     """
+    Q = NFoldConv(P)
+    values = Q[0]
+    probs = Q[1]
 
-    pass
+    # Plot
+    plt.figure(figsize=(6, 4))
+    plt.bar(values, probs, width=0.6, color='skyblue', edgecolor='black')
+    plt.xlabel("Values")
+    plt.ylabel("Probability")
+    plt.title("Distribution P")
+    plt.xticks(values)  # Show integer x-ticks for clarity
+    plt.show()
 
 
 ### Qeustion 4 ###
@@ -226,7 +348,7 @@ def plot_dist(P):
 def evenBinom(n, p):
     """
     The program outputs the probability P(X\ is\ even) for the random variable X~Binom(n, p).
-    
+
     Input:
     - n, p: The parameters for the binomial distribution.
 
@@ -241,7 +363,7 @@ def evenBinomFormula(n, p):
     """
     The program outputs the probability P(X\ is\ even) for the random variable X~Binom(n, p) Using a closed-form formula.
     It should also print the proof for the formula.
-    
+
     Input:
     - n, p: The parameters for the binomial distribution.
 
@@ -256,15 +378,15 @@ def evenBinomFormula(n, p):
 
 def three_RV(values, joint_probs):
     """
- 
-    Input:          
+
+    Input:
     - values: 3d numpy array of tuples: all the value combinations of X, Y, and Z
       Each tuple has the form (x_i, y_j, z_k) representing the i, j, and k values of X, Y, and Z, respectively
     - joint_probs: 3d numpy array: joint probability of X, Y, and Z
       The marginal distribution of each RV can be calculated from the joint distribution
-    
+
     Returns:
-    - v: The variance of X + Y + Z. (you cannot create the RV U = X + Y + Z) 
+    - v: The variance of X + Y + Z. (you cannot create the RV U = X + Y + Z)
     """
 
     return v
@@ -272,13 +394,13 @@ def three_RV(values, joint_probs):
 
 def three_RV_pairwise_independent(values, joint_probs):
     """
- 
-    Input:          
+
+    Input:
     - values: 3d numpy array of tuples: all the value combinations of X, Y, and Z
       Each tuple has the form (x_i, y_j, z_k) representing the i, j, and k values of X, Y, and Z, respectively
     - joint_probs: 3d numpy array: joint probability of X, Y, and Z
       The marginal distribution of each RV can be calculated from the joint distribution
-    
+
     Returns:
     - v: The variance of X + Y + Z. (you cannot create the RV U = X + Y + Z)
     """
@@ -294,7 +416,7 @@ def is_pairwise_collectively(X, Y, Z, joint_probs):
       Each tuple has the form (x_i, y_j, z_k) representing the i, j, and k values of X, Y, and Z, respectively
     - joint_probs: 3d numpy array: joint probability of X, Y, and Z
       The marginal distribution of each RV can be calculated from the joint distribution
-    
+
     Returns:
     TRUE or FALSE
     """
