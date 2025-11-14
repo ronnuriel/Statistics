@@ -288,8 +288,6 @@ def NFoldConv(P=np.array([[0, 1], [0.5, 0.5]]), n=2):
         P = np.asarray(P)
         values, probs = P[0], P[1]
 
-    # values = P[0].astype(int)
-    # probs = P[1]
 
     if n == 1:
         return P.copy()
