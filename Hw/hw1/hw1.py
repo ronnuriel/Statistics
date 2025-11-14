@@ -63,7 +63,6 @@ def find_sample_size_binom(defective_rate=0.03, target_prob=0.85, x=1):
     return n
 
 
-# def find_sample_size_nbinom(defective_rate=0.03, target_prob=0.85, x=1):
 def find_sample_size_nbinom(defective_rate=0.03, target_prob=0.85, x=1):
     """
     Using NBinom to return the minimal number of samples (n) required to have
