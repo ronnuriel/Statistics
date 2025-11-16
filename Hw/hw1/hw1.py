@@ -549,8 +549,28 @@ def is_pairwise_collectively(X, Y, Z, joint_probs):
     Returns:
     TRUE or FALSE
     """
+    r"""
+    Although X, Y, Z are pairwise independent, they are not collectively independent if:
+    P(X=x, Y=y, Z=z) != P(X=x) * P(Y=y) * P(Z=z)
+    As we have seen in the lecture every two RVs are independent but the three together are not,
+    and the famous example is the following:
+    X, Y are independent coin flips, and Z = X XOR Y.
+    Explain:
+    From having X and Y we can determine Z with probability 1, and thus they are not collectively independent,
+    but knowing only X or only Y gives no information about Z.
+    
+    Probability Table:
+        | X | Y | Z | P(X,Y,Z) |
+        |---|---|---|----------|
+        | 0 | 0 | 0 |   1/4    |
+        | 0 | 1 | 1 |   1/4    |
+        | 1 | 0 | 1 |   1/4    |
+        | 1 | 1 | 0 |   1/4    |
+        
+    
+    """
 
-    pass
+    return False
 
 
 ### Question 6 ###
