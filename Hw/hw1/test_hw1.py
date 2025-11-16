@@ -22,7 +22,8 @@ from hw1 import (
     evenBinom
 )
 from scipy import stats  # SciPy is required here
-
+import matplotlib
+matplotlib.use("Agg")
 
 # =========================
 # Helpers
