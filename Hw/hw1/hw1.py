@@ -455,7 +455,7 @@ def three_RV(values, joint_probs):
 
     # חילוץ Z
     Z = np.vectorize(lambda t: t[2])(values)
-
+    # calculate expectations and variances
     E_X = np.sum(X * joint_probs)
     E_Y = np.sum(Y * joint_probs)
     E_Z = np.sum(Z * joint_probs)
@@ -468,7 +468,6 @@ def three_RV(values, joint_probs):
     E_XY = np.sum(X * Y * joint_probs)
     E_XZ = np.sum(X * Z * joint_probs)
     E_YZ = np.sum(Y * Z * joint_probs)
-    ### Because pairwise independent: -> Cov(X,Y) = 0, Cov(X,Z) = 0, Cov(Y,Z) = 0
     Cov_XY = E_XY - E_X * E_Y
     Cov_XZ = E_XZ - E_X * E_Z
     Cov_YZ = E_YZ - E_Y * E_Z
