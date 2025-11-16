@@ -428,8 +428,53 @@ def three_RV(values, joint_probs):
     - v: The variance of X + Y + Z. (you cannot create the RV U = X + Y + Z)
     """
 
-    return v
+    r"""
+    We are looking for  Var(X + Y + Z):
+    Var(X + Y + Z) = Var(X) + Var(Y) + Var(Z) + 2Cov(X,Y) + 2Cov(X,Z) + 2Cov(Y,Z)
+    We will calculate Var(X), Var(Y), Var(Z), Cov(X,Y), Cov(X,Z), Cov(Y,Z) from the joint distribution
+    Var(x) = E[X^2] - (E[X])^2
+    E[X] = sum_x x * P(X=x)
+    E[XY] = sum_{x,y} x*y * P(X=x, Y=y)
+    Formula for Cov(X,Y) = E[XY] - E[X]E[Y]
 
+
+    Input Data will look like this table:
+        | X | Y | Z | P(X,Y,Z) |
+        |---|---|---|----------|
+        | x1| y1| z1|   p1     |
+        | x1| y1| z2|   p2     |
+        | x1| y2| z1|   p3     |
+        |...|...|...|   ...    |
+    """
+    # חילוץ X
+    X = np.vectorize(lambda t: t[0])(values)
+
+    # חילוץ Y
+    Y = np.vectorize(lambda t: t[1])(values)
+
+    # חילוץ Z
+    Z = np.vectorize(lambda t: t[2])(values)
+
+    E_X = np.sum(X * joint_probs)
+    E_Y = np.sum(Y * joint_probs)
+    E_Z = np.sum(Z * joint_probs)
+    E_X2 = np.sum(X**2 * joint_probs)
+    E_Y2 = np.sum(Y**2 * joint_probs)
+    E_Z2 = np.sum(Z**2 * joint_probs)
+    Var_X = E_X2 - E_X**2
+    Var_Y = E_Y2 - E_Y**2
+    Var_Z = E_Z2 - E_Z**2
+    E_XY = np.sum(X * Y * joint_probs)
+    E_XZ = np.sum(X * Z * joint_probs)
+    E_YZ = np.sum(Y * Z * joint_probs)
+    ### Because pairwise independent: -> Cov(X,Y) = 0, Cov(X,Z) = 0, Cov(Y,Z) = 0
+    Cov_XY = E_XY - E_X * E_Y
+    Cov_XZ = E_XZ - E_X * E_Z
+    Cov_YZ = E_YZ - E_Y * E_Z
+
+    v = Var_X + Var_Y + Var_Z + 2 * Cov_XY + 2 * Cov_XZ + 2 * Cov_YZ
+
+    return v
 
 def three_RV_pairwise_independent(values, joint_probs):
     """
@@ -443,6 +488,51 @@ def three_RV_pairwise_independent(values, joint_probs):
     Returns:
     - v: The variance of X + Y + Z. (you cannot create the RV U = X + Y + Z)
     """
+    # We are looking for  Var(X + Y + Z):
+    # Var(X + Y + Z) = Var(X) + Var(Y) + Var(Z) + 2Cov(X,Y) + 2Cov(X,Z) + 2Cov(Y,Z)
+    # We will calculate Var(X), Var(Y), Var(Z), Cov(X,Y), Cov(X,Z), Cov(Y,Z) from the joint distribution
+    # Var(x) = E[X^2] - (E[X])^2
+    # E[X] = sum_x x * P(X=x)
+    # E[XY] = sum_{x,y} x*y * P(X=x, Y=y)
+    # Formula for Cov(X,Y) = E[XY] - E[X]E[Y]
+    # Because X, Y, Z are pairwise independent:
+    # Cov(X,Y) = 0, Cov(X,Z) = 0, Cov(Y,Z) = 0
+    r"""
+    Input Data will look like this table:
+        | X | Y | Z | P(X,Y,Z) |
+        |---|---|---|----------|
+        | x1| y1| z1|   p1     |
+        | x1| y1| z2|   p2     |
+        | x1| y2| z1|   p3     |
+        |...|...|...|   ...    |
+    """
+    # חילוץ X
+    X = np.vectorize(lambda t: t[0])(values)
+
+    # חילוץ Y
+    Y = np.vectorize(lambda t: t[1])(values)
+
+    # חילוץ Z
+    Z = np.vectorize(lambda t: t[2])(values)
+
+    E_X = np.sum(X * joint_probs)
+    E_Y = np.sum(Y * joint_probs)
+    E_Z = np.sum(Z * joint_probs)
+    E_X2 = np.sum(X**2 * joint_probs)
+    E_Y2 = np.sum(Y**2 * joint_probs)
+    E_Z2 = np.sum(Z**2 * joint_probs)
+    Var_X = E_X2 - E_X**2
+    Var_Y = E_Y2 - E_Y**2
+    Var_Z = E_Z2 - E_Z**2
+    E_XY = np.sum(X * Y * joint_probs)
+    E_XZ = np.sum(X * Z * joint_probs)
+    E_YZ = np.sum(Y * Z * joint_probs)
+    ### Because pairwise independent: -> Cov(X,Y) = 0, Cov(X,Z) = 0, Cov(Y,Z) = 0
+    # Cov_XY = E_XY - E_X * E_Y
+    # Cov_XZ = E_XZ - E_X * E_Z
+    # Cov_YZ = E_YZ - E_Y * E_Z
+
+    v = Var_X + Var_Y + Var_Z
 
     return v
 
@@ -459,8 +549,28 @@ def is_pairwise_collectively(X, Y, Z, joint_probs):
     Returns:
     TRUE or FALSE
     """
+    r"""
+    Although X, Y, Z are pairwise independent, they are not collectively independent if:
+    P(X=x, Y=y, Z=z) != P(X=x) * P(Y=y) * P(Z=z)
+    As we have seen in the lecture every two RVs are independent but the three together are not,
+    and the famous example is the following:
+    X, Y are independent coin flips, and Z = X XOR Y.
+    Explain:
+    From having X and Y we can determine Z with probability 1, and thus they are not collectively independent,
+    but knowing only X or only Y gives no information about Z.
+    
+    Probability Table:
+        | X | Y | Z | P(X,Y,Z) |
+        |---|---|---|----------|
+        | 0 | 0 | 0 |   1/4    |
+        | 0 | 1 | 1 |   1/4    |
+        | 1 | 0 | 1 |   1/4    |
+        | 1 | 1 | 0 |   1/4    |
+        
+    
+    """
 
-    pass
+    return False
 
 
 ### Question 6 ###

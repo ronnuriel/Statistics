@@ -557,3 +557,227 @@ def test_evenBinom_matches_evenBinomFormula(n, p):
         f"Mismatch: n={n}, p={p}, "
         f"formula={val_formula}, pmf={val_pmf}"
     )
+
+def test_three_RV_independent_case():
+    """
+    Q5.A – sanity check when X,Y,Z are independent:
+    Var(X+Y+Z) = Var(X) + Var(Y) + Var(Z)
+    """
+    try:
+        from hw1 import three_RV
+    except Exception:
+        pytest.skip("three_RV not implemented; skipping.")
+        return
+
+    # ערכי X,Y,Z
+    X_vals = np.array([0, 1])
+    Y_vals = np.array([0, 2])
+    Z_vals = np.array([0, 3])
+
+    # התפלגויות שוליים (לבנות joint כעצמאיים)
+    pX = np.array([0.3, 0.7])   # סכום 1
+    pY = np.array([0.4, 0.6])   # סכום 1
+    pZ = np.array([0.2, 0.8])   # סכום 1
+
+    # בניית values: 3D array of tuples (x_i, y_j, z_k)
+    values = np.empty((len(X_vals), len(Y_vals), len(Z_vals)), dtype=object)
+    for i, x in enumerate(X_vals):
+        for j, y in enumerate(Y_vals):
+            for k, z in enumerate(Z_vals):
+                values[i, j, k] = (x, y, z)
+
+    # בניית joint_probs (עצמאיים → מכפלת השוליים)
+    joint_probs = np.empty_like(values, dtype=float)
+    for i in range(len(X_vals)):
+        for j in range(len(Y_vals)):
+            for k in range(len(Z_vals)):
+                joint_probs[i, j, k] = pX[i] * pY[j] * pZ[k]
+
+    # בדיקת נירמול
+    assert np.isclose(np.sum(joint_probs), 1.0)
+
+    # חישוב Var(X), Var(Y), Var(Z) מהשוליים (כי כאן הם עצמאיים)
+    EX = np.sum(X_vals * pX)
+    EX2 = np.sum((X_vals**2) * pX)
+    VarX = EX2 - EX**2
+
+    EY = np.sum(Y_vals * pY)
+    EY2 = np.sum((Y_vals**2) * pY)
+    VarY = EY2 - EY**2
+
+    EZ = np.sum(Z_vals * pZ)
+    EZ2 = np.sum((Z_vals**2) * pZ)
+    VarZ = EZ2 - EZ**2
+
+    expected_var_sum = VarX + VarY + VarZ
+
+    # קריאת הפונקציה של הסטודנט
+    v = three_RV(values, joint_probs)
+
+    assert np.isclose(v, expected_var_sum, atol=1e-6)
+
+
+def test_three_RV_correlated_case():
+    """
+    Q5.A – general case where X,Y,Z are not independent.
+    Var(X+Y+Z) מחושב ישירות מההתפלגות המשותפת, בלי להניח אי־תלות.
+    """
+    try:
+        from hw1 import three_RV
+    except Exception:
+        pytest.skip("three_RV not implemented; skipping.")
+        return
+
+    # ערכי X,Y,Z (אותו סט כמו בטסט הראשון לנוחות)
+    X_vals = np.array([0, 1])
+    Y_vals = np.array([0, 2])
+    Z_vals = np.array([0, 3])
+
+    values = np.empty((len(X_vals), len(Y_vals), len(Z_vals)), dtype=object)
+    for i, x in enumerate(X_vals):
+        for j, y in enumerate(Y_vals):
+            for k, z in enumerate(Z_vals):
+                values[i, j, k] = (x, y, z)
+
+    # נגדיר joint_probs כך שלא יהיו עצמאיים
+    joint_probs = np.zeros_like(values, dtype=float)
+
+    # נשים הסתברויות רק על כמה קומבינציות, והשאר 0
+    # (0,0,0)
+    joint_probs[0, 0, 0] = 0.10
+    # (1,0,0)
+    joint_probs[1, 0, 0] = 0.20
+    # (0,2,3)
+    joint_probs[0, 1, 1] = 0.30
+    # (1,2,3)
+    joint_probs[1, 1, 1] = 0.40
+
+    # לוודא שסכום הכול 1
+    assert np.isclose(np.sum(joint_probs), 1.0)
+
+    # מחשבים את Var(X+Y+Z) ישירות מההתפלגות (מותר בטסטים)
+    xs = []
+    ys = []
+    zs = []
+    ps = []
+
+    for i in range(len(X_vals)):
+        for j in range(len(Y_vals)):
+            for k in range(len(Z_vals)):
+                p = joint_probs[i, j, k]
+                if p > 0:
+                    x, y, z = values[i, j, k]
+                    xs.append(x)
+                    ys.append(y)
+                    zs.append(z)
+                    ps.append(p)
+
+    xs = np.array(xs, dtype=float)
+    ys = np.array(ys, dtype=float)
+    zs = np.array(zs, dtype=float)
+    ps = np.array(ps, dtype=float)
+
+    U = xs + ys + zs  # U = X + Y + Z (בטסט מותר לנו ליצור אותו)
+    EU = np.sum(U * ps)
+    EU2 = np.sum((U**2) * ps)
+    expected_var = EU2 - EU**2
+
+    # קריאת הפונקציה של הסטודנט
+    v = three_RV(values, joint_probs)
+
+    assert np.isclose(v, expected_var, atol=1e-6)
+
+def test_three_RV_pairwise_independent_basic():
+    """
+    Q5.B – Pairwise independent case:
+    Should compute Var(X)+Var(Y)+Var(Z) without covariances.
+    """
+    try:
+        from hw1 import three_RV_pairwise_independent
+    except Exception:
+        pytest.skip("three_RV_pairwise_independent not implemented; skipping.")
+        return
+
+    # ערכי X,Y,Z
+    X_vals = np.array([0, 1])
+    Y_vals = np.array([1, 2])
+    Z_vals = np.array([2, 4])
+
+    # התפלגויות שוליים
+    pX = np.array([0.3, 0.7])
+    pY = np.array([0.4, 0.6])
+    pZ = np.array([0.5, 0.5])
+
+    # values: כל הצירופים
+    values = np.empty((len(X_vals), len(Y_vals), len(Z_vals)), dtype=object)
+    for i, x in enumerate(X_vals):
+        for j, y in enumerate(Y_vals):
+            for k, z in enumerate(Z_vals):
+                values[i, j, k] = (x, y, z)
+
+    # joint_probs = מכפלת השוליים → pairwise independent
+    joint_probs = np.empty((len(X_vals), len(Y_vals), len(Z_vals)), dtype=float)
+    for i in range(len(X_vals)):
+        for j in range(len(Y_vals)):
+            for k in range(len(Z_vals)):
+                joint_probs[i, j, k] = pX[i] * pY[j] * pZ[k]
+
+    assert np.isclose(np.sum(joint_probs), 1.0)
+
+    # מחשבים Var(X), Var(Y), Var(Z) "מהשוליים"
+    EX = np.sum(X_vals * pX)
+    EX2 = np.sum((X_vals**2) * pX)
+    VarX = EX2 - EX**2
+
+    EY = np.sum(Y_vals * pY)
+    EY2 = np.sum((Y_vals**2) * pY)
+    VarY = EY2 - EY**2
+
+    EZ = np.sum(Z_vals * pZ)
+    EZ2 = np.sum((Z_vals**2) * pZ)
+    VarZ = EZ2 - EZ**2
+
+    expected = VarX + VarY + VarZ  # pairwise independent → no covariances
+
+    # חישוב מהפונקציה של הסטודנט
+    v = three_RV_pairwise_independent(values, joint_probs)
+
+    assert np.isclose(v, expected, atol=1e-6)
+
+def test_pairwise_independent_matches_general_case():
+    """
+    Q5.B – The pairwise independent version must match three_RV
+    when variables are indeed pairwise independent.
+    """
+    try:
+        from hw1 import three_RV, three_RV_pairwise_independent
+    except Exception:
+        pytest.skip("functions not implemented; skipping.")
+        return
+
+    X_vals = np.array([0, 1])
+    Y_vals = np.array([10, 20])
+    Z_vals = np.array([5, 15])
+
+    pX = np.array([0.2, 0.8])
+    pY = np.array([0.6, 0.4])
+    pZ = np.array([0.3, 0.7])
+
+    values = np.empty((len(X_vals), len(Y_vals), len(Z_vals)), dtype=object)
+    for i, x in enumerate(X_vals):
+        for j, y in enumerate(Y_vals):
+            for k, z in enumerate(Z_vals):
+                values[i, j, k] = (x, y, z)
+
+    joint_probs = np.empty(values.shape, dtype=float)
+    for i in range(len(X_vals)):
+        for j in range(len(Y_vals)):
+            for k in range(len(Z_vals)):
+                joint_probs[i, j, k] = pX[i] * pY[j] * pZ[k]
+
+    assert np.isclose(np.sum(joint_probs), 1.0)
+
+    v_general = three_RV(values, joint_probs)
+    v_pairwise = three_RV_pairwise_independent(values, joint_probs)
+
+    assert np.isclose(v_general, v_pairwise, atol=1e-6)
