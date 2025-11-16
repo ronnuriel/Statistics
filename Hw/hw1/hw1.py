@@ -602,12 +602,7 @@ def expectedC(n, p):
 
     for k in range(0, n + 1):
         C_k = comb(n, k)
-        print(f"C({k}) = {C_k}")
         P_k = stats.binom.pmf(k, n, p)
-        print(f"P(C={k}) = {P_k}")
         E += C_k * P_k
-        print(f"Intermediate E after k={k}: {E}")
 
-    print(f"For n={n}, p={p}: E[C] = {E:.6f}")
-    print("Type of E:", type(E))
     return float(E)
