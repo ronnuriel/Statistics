@@ -781,3 +781,71 @@ def test_pairwise_independent_matches_general_case():
     v_pairwise = three_RV_pairwise_independent(values, joint_probs)
 
     assert np.isclose(v_general, v_pairwise, atol=1e-6)
+
+def test_expectedC_n0():
+    """
+    n = 0 → only one sequence: empty sequence.
+    W = 0 always, so C = binom(0,0) = 1.
+    Expected value = 1.
+    """
+    from hw1 import expectedC
+    assert expectedC(0, 0.5) == 1
+
+
+def test_expectedC_n1():
+    """
+    n = 1 → sequences: {0,1}
+    W=0 → C=1
+    W=1 → C=1
+    So C always = 1 → expected value = 1.
+    """
+    from hw1 import expectedC
+    assert np.isclose(expectedC(1, 0.3), 1.0, atol=1e-9)
+    assert np.isclose(expectedC(1, 0.8), 1.0, atol=1e-9)
+
+
+def test_expectedC_small_n2():
+    """
+    n = 2
+    Possible W values:
+    k=0 → C=1
+    k=1 → C=2
+    k=2 → C=1
+
+    PMF(W):
+    P(W=0) = (1-p)^2
+    P(W=1) = 2p(1-p)
+    P(W=2) = p^2
+
+    Expected C = 1*(1-p)^2 + 2*2p(1-p) + 1*(p^2)
+               = (1-p)^2 + 4p(1-p) + p^2
+    """
+    from hw1 import expectedC
+
+    def expected_manual(p):
+        return ((1 - p)**2) + 4*p*(1 - p) + (p**2)
+
+    for p in [0.1, 0.3, 0.5, 0.9]:
+        assert np.isclose(expectedC(2, p), expected_manual(p), atol=1e-6)
+
+
+def test_expectedC_p0_and_p1():
+    """
+    p = 0  → W=0 always → C = binom(n,0) = 1
+    p = 1  → W=n always → C = binom(n,n) = 1
+    Expected value = 1
+    """
+    from hw1 import expectedC
+
+    for n in [0, 1, 5, 10]:
+        assert expectedC(n, 0) == 1
+        assert expectedC(n, 1) == 1
+
+
+def test_expectedC_returns_scalar():
+    """
+    Sanity check: ensure the function returns a real number.
+    """
+    from hw1 import expectedC
+    result = expectedC(5, 0.3)
+    assert isinstance(result, (int, float, np.floating))

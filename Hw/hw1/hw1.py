@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
+from math import comb
 
 
 ### Question 1 ###
@@ -578,6 +579,30 @@ def is_pairwise_collectively(X, Y, Z, joint_probs):
 def expectedC(n, p):
     """
     The program outputs the expected value of the RV C as defined in the notebook.
+    n = number of trials
+    p = probability of success in each trial
+    For example,
+    if n = 3:
+    We will have number of value 1 can be placed in 3 positions:
+    C(1): 001, 010, 100 = 3 There are 3 combinations to get value 1.
+    number of value 2 can be placed in 3 positions:
+    value 2:
+    C(2): 011, 101, 110 = 3
+    value 3:
+    C(3): 111 = 1
+    The distribution of C will be:
+    k | C(k)
+    ---------
+    0 | 1
+    1 | 3
+    2 | 3
+    3 | 1
     """
+    E = 0
 
-    pass
+    for k in range(0, n + 1):
+        C_k = comb(n, k)
+        P_k = stats.binom.pmf(k, n, p)
+        E += C_k * P_k
+
+    return float(E)
