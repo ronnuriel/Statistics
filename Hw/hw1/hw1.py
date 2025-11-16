@@ -343,7 +343,7 @@ def plot_dist(P=np.array([[0, 1], [0.5, 0.5]])):
 ### Qeustion 4 ###
 
 def evenBinom(n, p):
-    """
+    r"""
     The program outputs the probability P(X\ is\ even) for the random variable X~Binom(n, p).
 
     Input:
@@ -360,7 +360,7 @@ def evenBinom(n, p):
 
 
 def evenBinomFormula(n, p):
-    """
+    r"""
     The program outputs the probability P(X\ is\ even) for the random variable X~Binom(n, p) Using a closed-form formula.
     It should also print the proof for the formula.
 
