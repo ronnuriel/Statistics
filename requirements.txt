@@ -3,3 +3,5 @@ pandas
 matplotlib
 scipy
 jupyter
+sympy
+# הוסף כאן כל ספרייה נוספת ש-hw1.py משתמש בה
