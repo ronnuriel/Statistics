@@ -528,9 +528,9 @@ def three_RV_pairwise_independent(values, joint_probs):
     E_XZ = np.sum(X * Z * joint_probs)
     E_YZ = np.sum(Y * Z * joint_probs)
     ### Because pairwise independent: -> Cov(X,Y) = 0, Cov(X,Z) = 0, Cov(Y,Z) = 0
-    # Cov_XY = E_XY - E_X * E_Y
-    # Cov_XZ = E_XZ - E_X * E_Z
-    # Cov_YZ = E_YZ - E_Y * E_Z
+    # Cov_XY = E_XY - E_X * E_Y = 0
+    # Cov_XZ = E_XZ - E_X * E_Z = 0
+    # Cov_YZ = E_YZ - E_Y * E_Z = 0
 
     v = Var_X + Var_Y + Var_Z
 
