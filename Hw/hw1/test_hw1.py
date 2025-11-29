@@ -2,7 +2,7 @@
 # Tests for HW1 — Question 1 (Binomial & Negative Binomial)
 # Author IDs:
 #   ID1: 207884883
-#   ID2:
+#   ID2: 209321165
 # ------------------------------------------------------------
 
 import math
